@@ -118,6 +118,17 @@ const addFile = async (fileName) => {
         console.error(`Error creating file '${fileName}':`, err.message);
     }
 };
+const renameFile = async (filePath, newName) => {
+    const oldFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+    const newFilePath = path.join(path.dirname(oldFilePath), newName);
+
+    try {
+        await fs.promises.rename(oldFilePath, newFilePath);
+        console.log(`File renamed from "${filePath.split("\\").at(-1)}" to "${newFilePath.split("\\").at(-1)}"`);
+    } catch (error) {
+        console.error(`Error renaming file: ${error.message}`);
+    }
+}
 
 
 rl.on('line', async (input) => {
@@ -131,14 +142,18 @@ rl.on('line', async (input) => {
         } else if (trimmedInput.startsWith('cd')) {
             changeCd(input);
         } else if (trimmedInput === 'ls') {
-            await listContent();  // Предполагая, что listContent тоже будет асинхронной
+            await listContent();
         } else if (trimmedInput.startsWith('cat ')) {
             const filePath = trimmedInput.slice(4).trim();
             const finalPath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
-            await readFile(finalPath);  // Предполагая, что readFile тоже будет асинхронной
+            await readFile(finalPath);
         } else if (trimmedInput.startsWith('add ')) {
             const fileName = trimmedInput.slice(4).trim();
             await addFile(fileName);
+        } else if (trimmedInput.startsWith('rn ')) {
+            const filePath = trimmedInput.split(' ')[1];
+            const newName = trimmedInput.split(' ')[2];
+            await renameFile(filePath, newName);
         } else {
             console.log(`Invalid input: '${input}'. Please enter a valid command.`);
         }
