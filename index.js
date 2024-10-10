@@ -31,10 +31,47 @@ const handleExit = () => {
     console.log(`Thank you for using File Manager, ${username}, goodbye!`);
     process.exit();
 }
+const goUp = () => {
+    const currentDir = process.cwd();
+    const parentDir = path.dirname(currentDir);
+
+    if (currentDir === parentDir) {
+        console.log("You are already in the root directory. Cannot go up.");
+    } else {
+        process.chdir(parentDir);
+        printCurrentDir();
+        console.log("Moved up to parent directory.");
+    }
+}
+const changeCd = (input) => {
+    const targetPath = input.split(' ')[1];
+    if (!targetPath) {
+        console.log('Wrong path, try another one')
+    }
+    const finalPath = path.isAbsolute(targetPath) ? targetPath : path.resolve(process.cwd(), targetPath);
+
+    try {
+        const stats = fs.statSync(finalPath);
+        if (stats.isDirectory()) {
+            process.chdir(finalPath);
+            printCurrentDir();
+        } else {
+            console.log(`Error: "${targetPath}" is not a directory.`);
+        }
+    } catch (err) {
+        console.log(`Error: Directory "${targetPath}" does not exist.`);
+    }
+}
 
 rl.on('line', (input) => {
-    if (input.trim() === '.exit') {
+    const trimmedInput = input.trim()
+
+    if (trimmedInput === '.exit') {
         handleExit();
+    } else if (trimmedInput === 'up') {
+        goUp();
+    } else if (trimmedInput.startsWith('cd')) {
+        changeCd(input);
     } else {
         console.log(`Invalid input: '${input}'. Please enter a valid command.`);
     }
