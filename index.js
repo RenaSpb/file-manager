@@ -1,6 +1,7 @@
 const os = require('os');
 const path = require('path');
 const readline = require('readline');
+const fs = require('fs');
 
 const Greet = () => {
     const args = process.argv.slice(2);
@@ -62,6 +63,36 @@ const changeCd = (input) => {
         console.log(`Error: Directory "${targetPath}" does not exist.`);
     }
 }
+const listContent = () => {
+    fs.readdir(process.cwd(), { withFileTypes: true }, (err, entries) => {
+        if (err) {
+            console.log('Error reading directory:', err);
+            return;
+        }
+        const folders = entries.filter(entry => entry.isDirectory());
+        const files = entries.filter(entry => entry.isFile());
+
+        const sortedFolders = folders.map(folder => folder.name).sort();
+        const sortedFiles = files.map(file => file.name).sort();
+
+        console.log('Directory listing:');
+        console.log('Number  Type          Name');
+        console.log('-------------------------------------------');
+
+        let index = 1;
+
+        sortedFolders.forEach(folder => {
+            console.log(`${index}   Folder        ${folder}`);
+            index++;
+        });
+
+        sortedFiles.forEach(file => {
+            console.log(`${index}   File          ${file}`);
+            index++;
+        });
+    });
+    printCurrentDir();
+}
 
 rl.on('line', (input) => {
     const trimmedInput = input.trim()
@@ -72,6 +103,8 @@ rl.on('line', (input) => {
         goUp();
     } else if (trimmedInput.startsWith('cd')) {
         changeCd(input);
+    } else if (trimmedInput === 'ls') {
+        listContent();
     } else {
         console.log(`Invalid input: '${input}'. Please enter a valid command.`);
     }
