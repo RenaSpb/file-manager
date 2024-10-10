@@ -63,12 +63,10 @@ const changeCd = (input) => {
         console.log(`Error: Directory "${targetPath}" does not exist.`);
     }
 }
-const listContent = () => {
-    fs.readdir(process.cwd(), { withFileTypes: true }, (err, entries) => {
-        if (err) {
-            console.log('Error reading directory:', err);
-            return;
-        }
+const listContent = async () => {
+    try {
+        const entries = await fs.readdir(process.cwd(), { withFileTypes: true });
+
         const folders = entries.filter(entry => entry.isDirectory());
         const files = entries.filter(entry => entry.isFile());
 
@@ -90,24 +88,64 @@ const listContent = () => {
             console.log(`${index}   File          ${file}`);
             index++;
         });
-    });
+    } catch (err) {
+        console.log('Error reading directory:', err);
+    }
+
     printCurrentDir();
 }
+const readFile = async (finalPath) => {
+    return new Promise((resolve, reject) => {
+        const readStream = fs.createReadStream(finalPath, { encoding: 'utf8' });
 
-rl.on('line', (input) => {
+        readStream.on('data', (text) => {
+            process.stdout.write(text);
+        });
+        readStream.on('end', () => {
+            resolve();
+        });
+        readStream.on('error', (error) => {
+            reject(error);
+        });
+    });
+};
+const addFile = async (fileName) => {
+    const filePath = path.resolve(process.cwd(), fileName);
+    try {
+        await fs.promises.writeFile(filePath, '');
+        console.log(`File '${fileName}' created successfully.`);
+    } catch (err) {
+        console.error(`Error creating file '${fileName}':`, err.message);
+    }
+};
+
+
+rl.on('line', async (input) => {
     const trimmedInput = input.trim()
 
-    if (trimmedInput === '.exit') {
-        handleExit();
-    } else if (trimmedInput === 'up') {
-        goUp();
-    } else if (trimmedInput.startsWith('cd')) {
-        changeCd(input);
-    } else if (trimmedInput === 'ls') {
-        listContent();
-    } else {
-        console.log(`Invalid input: '${input}'. Please enter a valid command.`);
+    try {
+        if (trimmedInput === '.exit') {
+            handleExit();
+        } else if (trimmedInput === 'up') {
+            goUp();
+        } else if (trimmedInput.startsWith('cd')) {
+            changeCd(input);
+        } else if (trimmedInput === 'ls') {
+            await listContent();  // Предполагая, что listContent тоже будет асинхронной
+        } else if (trimmedInput.startsWith('cat ')) {
+            const filePath = trimmedInput.slice(4).trim();
+            const finalPath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+            await readFile(finalPath);  // Предполагая, что readFile тоже будет асинхронной
+        } else if (trimmedInput.startsWith('add ')) {
+            const fileName = trimmedInput.slice(4).trim();
+            await addFile(fileName);
+        } else {
+            console.log(`Invalid input: '${input}'. Please enter a valid command.`);
+        }
+    } catch (error) {
+        console.error(`An error occurred: ${error.message}`);
     }
+
     printCurrentDir();
     rl.prompt();
 });
