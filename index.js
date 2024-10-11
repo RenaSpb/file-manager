@@ -2,6 +2,7 @@ const os = require('os');
 const path = require('path');
 const readline = require('readline');
 const fs = require('fs');
+const { pipeline } = require('stream/promises');
 
 const Greet = () => {
     const args = process.argv.slice(2);
@@ -129,6 +130,24 @@ const renameFile = async (filePath, newName) => {
         console.error(`Error renaming file: ${error.message}`);
     }
 }
+const copyFile = (filePath, copyPath) => {
+    return new Promise(async (resolve, reject) => {
+        const oldFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+        const copyFilePath = path.isAbsolute(copyPath) ? copyPath : path.resolve(process.cwd(), copyPath);
+
+        try {
+            const readStream = fs.createReadStream(oldFilePath);
+            const writeStream = fs.createWriteStream(copyFilePath);
+
+            await pipeline(readStream, writeStream);
+            console.log(`File copied successfully.`);
+            resolve();
+        } catch (error) {
+            console.error(`Failed to copy: ${error.message}`);
+            reject(error);
+        }
+    });
+};
 
 
 rl.on('line', async (input) => {
@@ -154,6 +173,10 @@ rl.on('line', async (input) => {
             const filePath = trimmedInput.split(' ')[1];
             const newName = trimmedInput.split(' ')[2];
             await renameFile(filePath, newName);
+        } else if (trimmedInput.startsWith('cp ')) {
+                const filePath = trimmedInput.split(' ')[1];
+                const copyPath = trimmedInput.split(' ')[2];
+                await copyFile(filePath, copyPath);
         } else {
             console.log(`Invalid input: '${input}'. Please enter a valid command.`);
         }

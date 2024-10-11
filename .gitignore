@@ -14,7 +14,7 @@ npm-debug.log*
 
 # Файлы IDE
 .vscode/
-.idea/
+../.idea/
 
 # Системные файлы
 .DS_Store
