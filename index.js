@@ -3,6 +3,8 @@ const path = require('path');
 const readline = require('readline');
 const fs = require('fs');
 const { pipeline } = require('stream/promises');
+const crypto = require('crypto');
+const zlib = require('zlib');
 
 const Greet = () => {
     const args = process.argv.slice(2);
@@ -148,7 +150,108 @@ const copyFile = (filePath, copyPath) => {
         }
     });
 };
+const moveFile = (filePath, movePath) => {
+    return new Promise(async (resolve, reject) => {
+        const oldFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+        const moveFilePath = path.isAbsolute(movePath) ? movePath : path.resolve(process.cwd(), movePath);
 
+        try {
+            const readStream = fs.createReadStream(oldFilePath);
+            const writeStream = fs.createWriteStream(moveFilePath);
+
+            await pipeline(readStream, writeStream);
+            await fs.promises.unlink(oldFilePath);
+
+            console.log(`File moved  successfully.`);
+            resolve();
+        } catch (error) {
+            console.error(`Failed to moved : ${error.message}`);
+            reject(error);
+        }
+    });
+};
+const deleteFile = (filePath) => {
+    return new Promise((resolve, reject) => {
+        const deleteFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+
+        fs.promises.unlink(deleteFilePath)
+            .then(() => {
+                console.log(`File deleted successfully.`);
+                resolve();
+            })
+            .catch((error) => {
+                console.error(`Failed to delete: ${error.message}`);
+                reject(error);
+            });
+    });
+};
+const printEOLInfo = () => {
+    console.log("Default system End-Of-Line (EOL):");
+    console.log("EOL as JSON:", JSON.stringify(os.EOL));
+    console.log("EOL length:", os.EOL.length);
+    console.log("EOL character codes:", os.EOL.split('').map(char => char.charCodeAt(0)));
+}
+const printCPUInfo = () => {
+    const cpus = os.cpus();
+    console.log(`CPUs numbers: ${cpus.length}`);
+    cpus.forEach((cpu, index) => {
+        console.log(`\nCPU ${index + 1}:`);
+        console.log(`  Model: ${cpu.model}`);
+        console.log(`  Speed: ${(cpu.speed / 1000).toFixed(2)} GHz`);
+    });
+}
+const printHomedir = () => {
+    console.log(`Home Directory: ${os.homedir()}`);
+}
+const printUsername = () => {
+    console.log(`System username: ${os.userInfo().username}`);
+}
+const printArchitecture = () => {
+    console.log(`CPU Architecture: ${os.arch()}`);
+};
+const calculateFileHash = async (filePath) => {
+    try {
+        const data = await fs.promises.readFile(filePath);
+        const hash = crypto.createHash('sha256').update(data).digest('hex');
+        console.log(`Hash of ${filePath} is \n${hash}`);
+    } catch (error) {
+        console.error(`Error calculating hash: ${error.message}`);
+    }
+};
+const compressFile = async (filePath) => {
+    return new Promise((resolve, reject) => {
+        const readStream = fs.createReadStream(filePath);
+        const writeStream = fs.createWriteStream(compressPath);
+        const brotli = zlib.createBrotliCompress();
+
+        pipeline(readStream, brotli, writeStream, (err) => {
+            if (err) {
+                console.error(`Compression failed: ${err.message}`);
+                reject(err);
+            } else {
+                console.log(`File compressed successfully`);
+                resolve();
+            }
+        });
+    });
+}
+const decompressFile = async (filePath) => {
+    return new Promise((resolve, reject) => {
+        const readStream = fs.createReadStream(filePath);
+        const writeStream = fs.createWriteStream(decompressPath);
+        const brotli = zlib.createBrotliDecompress();
+
+        pipeline(readStream, brotli, writeStream, (err) => {
+            if (err) {
+                console.error(`Decompression failed: ${err.message}`);
+                reject(err);
+            } else {
+                console.log(`File decompressed successfully: ${decompressPath}`);
+                resolve();
+            }
+        });
+    });
+}
 
 rl.on('line', async (input) => {
     const trimmedInput = input.trim()
@@ -170,13 +273,37 @@ rl.on('line', async (input) => {
             const fileName = trimmedInput.slice(4).trim();
             await addFile(fileName);
         } else if (trimmedInput.startsWith('rn ')) {
-            const filePath = trimmedInput.split(' ')[1];
-            const newName = trimmedInput.split(' ')[2];
+            const [, filePath, newName] = trimmedInput.split(' ');
             await renameFile(filePath, newName);
         } else if (trimmedInput.startsWith('cp ')) {
-                const filePath = trimmedInput.split(' ')[1];
-                const copyPath = trimmedInput.split(' ')[2];
+                const [, filePath, copyPath] = trimmedInput.split(' ');
                 await copyFile(filePath, copyPath);
+        } else if (trimmedInput.startsWith('mv ')) {
+            const filePath = trimmedInput.split(' ')[1];
+            const movePath = trimmedInput.split(' ')[2];
+            await moveFile(filePath, movePath);
+        } else if (trimmedInput.startsWith('rm ')) {
+            const filePath = trimmedInput.split(' ')[1];
+            await deleteFile(filePath);
+        }  else if (trimmedInput === 'os --EOL') {
+            printEOLInfo();
+        }  else if (trimmedInput === 'os --cpus') {
+            printCPUInfo();
+        }  else if (trimmedInput === 'os --homedir') {
+            printHomedir();
+        }  else if (trimmedInput === 'os --username') {
+            printUsername();
+        } else if (trimmedInput === 'os --architecture') {
+            printArchitecture();
+        } else if (trimmedInput.startsWith('hash ')) {
+                const filePath = trimmedInput.split(' ')[1];
+                await calculateFileHash(filePath);
+        } else if (trimmedInput.startsWith('compress ')) {
+            const [, filePath, compressPath] = trimmedInput.split(' ');
+            await compressFile(filePath, compressPath);
+        } else if (trimmedInput.startsWith('decompress ')) {
+            const [, filePath, decompressPath] = trimmedInput.split(' ');
+            await decompressFile(filePath, decompressPath);
         } else {
             console.log(`Invalid input: '${input}'. Please enter a valid command.`);
         }
