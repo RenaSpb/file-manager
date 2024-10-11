@@ -213,44 +213,56 @@ const calculateFileHash = async (filePath) => {
     try {
         const data = await fs.promises.readFile(filePath);
         const hash = crypto.createHash('sha256').update(data).digest('hex');
-        console.log(`Hash of ${filePath} is \n${hash}`);
+        console.log(`Hash of ${filePath.split("\\").at(-1)} is \n${hash}`);
     } catch (error) {
         console.error(`Error calculating hash: ${error.message}`);
     }
 };
-const compressFile = async (filePath) => {
-    return new Promise((resolve, reject) => {
-        const readStream = fs.createReadStream(filePath);
-        const writeStream = fs.createWriteStream(compressPath);
-        const brotli = zlib.createBrotliCompress();
+const compressFile = async (filePath, compressPath) => {
+    if (!fs.existsSync(filePath)) {
+        throw new Error('Source file does not exist');
+    }
+    if (!compressPath.endsWith('.br')) {
+        compressPath += '.br';
+    }
+    if (filePath === compressPath) {
+        throw new Error('Source and destination paths cannot be the same');
+    }
 
-        pipeline(readStream, brotli, writeStream, (err) => {
-            if (err) {
-                console.error(`Compression failed: ${err.message}`);
-                reject(err);
-            } else {
-                console.log(`File compressed successfully`);
-                resolve();
-            }
-        });
-    });
+    const readStream = fs.createReadStream(filePath);
+    const writeStream = fs.createWriteStream(compressPath);
+    const brotli = zlib.createBrotliCompress();
+
+    try {
+        await pipeline(readStream, brotli, writeStream);
+        console.log(`File compressed successfully: ${compressPath}`);
+    } catch (error) {
+        console.error(`Compression failed: ${error.message}`);
+        throw error;
+    }
 }
-const decompressFile = async (filePath) => {
-    return new Promise((resolve, reject) => {
-        const readStream = fs.createReadStream(filePath);
-        const writeStream = fs.createWriteStream(decompressPath);
-        const brotli = zlib.createBrotliDecompress();
+const decompressFile = async (filePath, decompressPath) => {
+    if (!fs.existsSync(filePath)) {
+        throw new Error('Source file does not exist');
+    }
+    if (filePath === decompressPath) {
+        throw new Error('Source and destination paths cannot be the same');
+    }
+    if (!filePath.endsWith('.br')) {
+        throw new Error('Input file must be a .br compressed file');
+    }
 
-        pipeline(readStream, brotli, writeStream, (err) => {
-            if (err) {
-                console.error(`Decompression failed: ${err.message}`);
-                reject(err);
-            } else {
-                console.log(`File decompressed successfully: ${decompressPath}`);
-                resolve();
-            }
-        });
-    });
+    const readStream = fs.createReadStream(filePath);
+    const writeStream = fs.createWriteStream(decompressPath);
+    const brotli = zlib.createBrotliDecompress();
+
+    try {
+        await pipeline(readStream, brotli, writeStream);
+        console.log(`File decompressed successfully`);
+    } catch (error) {
+        console.error(`Decompression failed`);
+        throw error;
+    }
 }
 
 rl.on('line', async (input) => {
