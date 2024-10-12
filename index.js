@@ -68,7 +68,7 @@ const changeCd = (input) => {
 }
 const listContent = async () => {
     try {
-        const entries = await fs.readdir(process.cwd(), { withFileTypes: true });
+        const entries = await fs.promises.readdir(process.cwd(), { withFileTypes: true });
 
         const folders = entries.filter(entry => entry.isDirectory());
         const files = entries.filter(entry => entry.isFile());
@@ -94,8 +94,6 @@ const listContent = async () => {
     } catch (err) {
         console.log('Error reading directory:', err);
     }
-
-    printCurrentDir();
 }
 const readFile = async (finalPath) => {
     return new Promise((resolve, reject) => {
@@ -135,9 +133,9 @@ const renameFile = async (filePath, newName) => {
 const copyFile = (filePath, copyPath) => {
     return new Promise(async (resolve, reject) => {
         const oldFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
-        const copyFilePath = path.isAbsolute(copyPath) ? copyPath : path.resolve(process.cwd(), copyPath);
+        let copyFilePath = path.isAbsolute(copyPath) ? copyPath : path.resolve(process.cwd(), copyPath);
 
-        try {
+       try {
             const readStream = fs.createReadStream(oldFilePath);
             const writeStream = fs.createWriteStream(copyFilePath);
 
