@@ -2,9 +2,9 @@
   "name": "file-manager",
   "version": "1.0.0",
   "description": "Implementing a File Manager Using Node.js API",
-  "main": "index.js",
+  "main": "modules/index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node modules/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
