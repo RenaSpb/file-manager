@@ -61,7 +61,7 @@ const changeCd = (input) => {
             console.log(`Error: "${targetPath}" is not a directory.`);
         }
     } catch (err) {
-        console.log(`Error: Directory "${targetPath}" does not exist.`);
+        console.log(`Operation fail. Error: Directory "${targetPath}" does not exist.`);
     }
 }
 const listContent = async () => {
@@ -90,7 +90,7 @@ const listContent = async () => {
             index++;
         });
     } catch (err) {
-        console.log('Error reading directory:', err);
+        console.log('Operation fail.');
     }
 }
 const readFile = async (finalPath) => {
@@ -114,7 +114,7 @@ const addFile = async (fileName) => {
         await fs.promises.writeFile(filePath, '');
         console.log(`File '${fileName}' created successfully.`);
     } catch (err) {
-        console.error(`Error creating file '${fileName}':`, err.message);
+        console.error(`Operation fail. Error creating file '${fileName}':`, err.message);
     }
 };
 const renameFile = async (filePath, newName) => {
@@ -125,7 +125,7 @@ const renameFile = async (filePath, newName) => {
         await fs.promises.rename(oldFilePath, newFilePath);
         console.log(`File renamed from "${filePath.split("\\").at(-1)}" to "${newFilePath.split("\\").at(-1)}"`);
     } catch (error) {
-        console.error(`Error renaming file: ${error.message}`);
+        console.error(`Operation fail: ${error.message}`);
     }
 }
 const copyFile = (filePath, copyPath) => {
@@ -141,7 +141,7 @@ const copyFile = (filePath, copyPath) => {
             console.log(`File copied successfully.`);
             resolve();
         } catch (error) {
-            console.error(`Failed to copy: ${error.message}`);
+            console.error(`Operation fail.: ${error.message}`);
             reject(error);
         }
     });
@@ -161,7 +161,7 @@ const moveFile = (filePath, movePath) => {
             console.log(`File moved  successfully.`);
             resolve();
         } catch (error) {
-            console.error(`Failed to moved : ${error.message}`);
+            console.error(`Operation fail: ${error.message}`);
             reject(error);
         }
     });
@@ -176,7 +176,7 @@ const deleteFile = (filePath) => {
                 resolve();
             })
             .catch((error) => {
-                console.error(`Failed to delete: ${error.message}`);
+                console.error(`Operation fail: ${error.message}`);
                 reject(error);
             });
     });
@@ -211,7 +211,7 @@ const calculateFileHash = async (filePath) => {
         const hash = crypto.createHash('sha256').update(data).digest('hex');
         console.log(`Hash of ${filePath.split("\\").at(-1)} is \n${hash}`);
     } catch (error) {
-        console.error(`Error calculating hash: ${error.message}`);
+        console.error(`Operation fail: ${error.message}`);
     }
 };
 const compressFile = async (filePath, compressPath) => {
@@ -242,7 +242,7 @@ const compressFile = async (filePath, compressPath) => {
         await pipeline(readStream, brotli, writeStream);
         console.log(`File compressed successfully: ${finalCompressPath}`);
     } catch (error) {
-        console.error(`Compression failed: ${error.message}`);
+        console.error(`Operation fail: ${error.message}`);
         throw error;
     }
 }
@@ -277,7 +277,7 @@ const decompressFile = async (filePath, decompressPath) => {
         await pipeline(readStream, brotli, writeStream);
         console.log(`File decompressed successfully to ${finalDecompressPath}`);
     } catch (error) {
-        console.error(`Decompression failed: ${error.message}`);
+        console.error(`Operation fail: ${error.message}`);
         throw error;
     }
 }
